@@ -1,0 +1,11 @@
+Date collected|Plot__|Species |Sex Weight
+1/9/78 1|DM M 40
+1/9/78 1|DM EF 36
+1/9/78 41|DS EF 135
+1/20/78 1|DM F 39
+1/20/78 2|DM M 43
+1/20/78 2|DS EF 144
+3/13/78 2|DM EF 51
+3/13/78 2|DM EF 44
+3/13/78 2|DS EF 146
+
