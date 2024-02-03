@@ -150,7 +150,6 @@ import numpy as np
 def merge_close_lines(lines, delta_rho = 8, delta_theta = np.deg2rad(1)):
     grouped_lines = {}  # Dictionary to hold groups of lines
     line_indices = list(range(len(lines)))  # Keep track of line indices
-
     # Group lines by their distance (rho) and angle (theta)
     while line_indices:
         idx = line_indices.pop(0)
@@ -265,3 +264,10 @@ def subtract_combined_and_dilated_image_from_original_image(inverted_image,combi
     image_without_lines = cv2.subtract(inverted_image,combined_image_dilated)
     return image_without_lines
 
+def remove_noisy_line_borders_from_image(img):
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    image = img.copy()
+    image = cv2.erode(image,kernel,iterations = 1)
+    image = cv2.dilate(image,kernel,iterations = 1)
+    return image
+    
