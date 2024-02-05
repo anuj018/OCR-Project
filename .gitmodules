@@ -1,0 +1,3 @@
+[submodule "SimpleHTR"]
+	path = SimpleHTR
+	url = https://github.com/githubharald/SimpleHTR.git
