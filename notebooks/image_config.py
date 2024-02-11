@@ -24,8 +24,12 @@ def binarized_image(image):
 def invert_image(image):
     return cv2.bitwise_not(image.copy())
 
-def dilate_image(image): 
-    image = binarized_image(image)
+def dilate_image(img, kernel_size = np.ones((5, 5), np.uint8),inverted = False): 
+    image = img.copy()
+    if inverted == False:
+        image = binarized_image(image)
+    else:
+        print('image is inverted')
     return cv2.dilate(image, kernel_size, iterations=5)
 
 def draw_contour_on_image(image,contour):
@@ -36,20 +40,30 @@ def draw_contour_on_image(image,contour):
         image_with_contours = cv2.drawContours(img, [contour], -1, (255,255,0), 3)
     image_with_contours = cv2.cvtColor(image_with_contours, cv2.COLOR_BGR2RGB)
     return image_with_contours
-    
-def find_and_draw_contours_in_image(image):
-    dilated_image = dilate_image(image)
+
+def find_contours_on_image(image,image_dilated = False):
+    dilated_image = image.copy()
+    if image_dilated == False:
+        dilated_image = dilate_image(image)
     contours, hierarchy = cv2.findContours(dilated_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    return contours, hierarchy
+    
+def find_and_draw_contours_in_image(image,image_dilated = False):
+    contours, hierarchy = find_contours_on_image(image,image_dilated = False)
     image_with_contours = draw_contour_on_image(image,contours)
     return contours, image_with_contours
 
-def filter_and_draw_rectangular_contours(image,contours,epsilon_factor = 0.01):
+def filter_rectangular_contours(image,contours,epsilon_factor = 0.01):
     rectangular_contours = []
     for contour in contours:
         peri = cv2.arcLength(contour, True)
         approx = cv2.approxPolyDP(contour, epsilon_factor * peri, True)
         if len(approx) == 4:
-            rectangular_contours.append(approx)
+            rectangular_contours.append(approx) 
+    return rectangular_contours
+
+def filter_and_draw_rectangular_contours(image,contours,epsilon_factor = 0.01):
+    rectangular_contours = filter_rectangular_contours(image,contours,epsilon_factor = 0.01)
     image_with_only_rectangular_contours = image.copy()
     cv2.drawContours(image_with_only_rectangular_contours, rectangular_contours, -1, (0, 255, 0), 3)
     image_with_only_rectangular_contours = cv2.cvtColor(image_with_only_rectangular_contours, cv2.COLOR_BGR2RGB)
@@ -254,6 +268,12 @@ def erode_horizontal_lines(inverted_image):
     horizontal_lines_eroded_image = cv2.dilate(horizontal_lines_eroded_image, ver, iterations=10)
     return horizontal_lines_eroded_image
 
+# def dilate_image(img):
+#     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+#     image = img.copy()
+#     image = cv2.dilate(image,kernel,iterations = 10)
+#     return image
+
 def combine_eroded_images(vertical_lines_eroded_image,horizontal_lines_eroded_image):
     combined_image = cv2.add(vertical_lines_eroded_image, horizontal_lines_eroded_image)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
@@ -270,4 +290,35 @@ def remove_noisy_line_borders_from_image(img):
     image = cv2.erode(image,kernel,iterations = 1)
     image = cv2.dilate(image,kernel,iterations = 1)
     return image
+
+def get_mean_height_of_bounding_boxes(sorted_bounding_boxes):
+    heights = []
+    for bounding_box in sorted_bounding_boxes:
+        x, y, w, h = bounding_box
+        heights.append(h)
+    return np.mean(heights)
+
+def sort_bounding_boxes_by_y_coordinate(bounding_boxes):
+    bounding_boxes = sorted(bounding_boxes, key=lambda x: x[1])
+    return bounding_boxes
+    
+def club_all_bounding_boxes_by_similar_y_coordinates_into_rows(mean_height,bounding_boxes,current_row):
+    rows = []
+    half_of_mean_height = mean_height / 2
+    for bounding_box in bounding_boxes[1:]:
+        current_bounding_box_y = bounding_box[1]
+        previous_bounding_box_y = current_row[-1][1]
+        distance_between_bounding_boxes = abs(current_bounding_box_y - previous_bounding_box_y)
+        if distance_between_bounding_boxes <= half_of_mean_height:
+            current_row.append(bounding_box)
+        else:
+            rows.append(current_row)
+            current_row = [ bounding_box ]
+    rows.append(current_row)
+    return rows
+    
+def sort_all_rows_by_x_coordinate(rows):
+    for row in rows:
+        row.sort(key=lambda x: x[0])
+    return rows
     
